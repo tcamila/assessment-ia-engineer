@@ -1,121 +1,129 @@
 # 🤖 Data Tools | AI Engineer Assessment
 
 ## 1. Descripción del Proyecto
+Esta plataforma es una herramienta integral de análisis de datos y monitoreo diseñada para instituciones financieras y cooperativas. Su objetivo principal es **democratizar el acceso a la información** permitiendo que perfiles no técnicos realicen consultas complejas mediante lenguaje natural, transformándolas automáticamente en código SQL (NL2SQL).
 
-Esta aplicación es una plataforma integral de análisis de datos y monitoreo diseñada para instituciones financieras o cooperativas con una arquitectura **Multi-Tenant** (Múltiples inquilinos u organizaciones). Resuelve el problema de democratizar el acceso a la información mediante un asistente de **Inteligencia Artificial (NL2SQL)** que permite a los usuarios hacer preguntas en lenguaje natural para obtener consultas de bases de datos seguras y reportes al instante.
-
-El valor central de esta herramienta radica en la **privacidad y aislamiento de datos**: un analista solo puede consultar e interactuar matemáticamente con la información que pertenece estrictamente a su propia organización, previniendo fugas de información.
+El valor central del sistema radica en su arquitectura **Multi-Tenant**, que garantiza un aislamiento estricto de los datos. Cada usuario interactúa exclusivamente con la información de su propia organización, integrando capas avanzadas de seguridad y auditoría automática para prevenir fugas de información o ejecuciones malintencionadas.
 
 ---
 
 ## 2. Arquitectura del Sistema
+El proyecto sigue una estructura modular y escalable dentro del directorio `src/`:
 
-El proyecto tiene una estructura modular clara para facilitar su escalabilidad:
-
-- **`auth`**: Gestiona las credenciales de los usuarios usando hashes seguros. Controla a qué organización pertenece la persona que inicia sesión.
-- **`db`**: Centraliza la conexión y recuperación de datos directamente con la base de datos local SQLite, devolviendo DataFrames listos para su uso.
-- **`llm`**: Construye las instrucciones (Prompts) para la inteligencia artificial y aplica los *Guardrails* (reglas de bloqueo) de seguridad en todo el código generado.
-- **`nl_query`**: Traductor principal. Intercepta la pregunta escrita por la persona, se la pasa a la IA (o al módulo de respuestas pre-grabadas offline) y devuelve la consulta limpia.
-- **`reports`**: Almacena las consultas estáticas frecuentemente utilizadas para los tableros generales, y dibuja los gráficos interactivos.
-- **`monitoring`**: Audita todos los datos buscando comportamientos sospechosos basándose en reglas duras (ej. montos excesivos) y emite un veredicto de auditoría.
-
-El flujo es unidireccional: **Usuario -> Interfaz (Streamlit) -> Guardrails/Auth -> Base de Datos -> Interfaz**.
+- **`auth/`**: Gestiona la autenticación de usuarios y el control de acceso basado en organizaciones. Utiliza hashing SHA-256 para las credenciales.
+- **`db/`**: Centraliza la lógica de conexión a la base de datos SQLite y la ejecución de consultas, retornando resultados en formatos optimizados (Pandas DataFrames).
+- **`llm/`**: Orquestador de la Inteligencia Artificial. Contiene el constructor de prompts dinámicos y los **Guardrails** de seguridad SQL.
+- **`monitoring/`**: Motor de auditoría que ejecuta reglas de negocio programadas para detectar anomalías (ej. montos inusuales o acumulación de alertas).
+- **`nl_query/`**: Motor de traducción de lenguaje natural a SQL. Implementa una lógica dual: procesamiento vía IA (Groq/Llama 3) y un motor de **Fallback** local basado en heurísticas.
+- **`reports/`**: Define las consultas estáticas para los tableros de control y la lógica de visualización interactiva.
+- **`utils/`**: Configuraciones globales y utilidades transversales del sistema.
 
 ---
 
-## 3. Tecnologías Utilizadas
+## 3. Funcionalidades Principales
 
-- **Python 3.10+**: Lenguaje núcleo de todo el backend y frontend gracias a Streamlit.
-- **Streamlit**: Framework que permite crear la interfaz gráfica visual (UI) moderna, componentes interactivos y control de estado reactivo.
-- **SQLite**: Base de datos relacional ligera y local que no requiere configuración central ni servidores externos.
-- **Pandas**: Motor de estructura de datos que procesa las tablas SQL rápidamente para mostrarlas y exportarlas.
-- **Plotly**: Creador de gráficos interactivos, limpios y minimalistas listos para explorar en pantalla.
-- **Groq (API)**: Proveedor de modelos de lenguaje (LLM) extremadamente rápidos como Llama 3 para orquestar la comprensión de lenguaje natural. *(Es opcional en esta app)*
-- **python-dotenv**: Gestor de credenciales de entorno para asegurar que las variables sensibles no queden expuestas directamente en el código base.
+### 🧠 Asistente NL2SQL (Natural Language to SQL)
+Permite a los analistas realizar preguntas como *"¿Cuántos asociados tengo?"* o *"Lista las transacciones de más de 10 millones"*. El sistema traduce la intención a SQL puro, lo valida y lo ejecuta al instante.
 
----
+### 🛡️ Guardrails de Seguridad
+Cada consulta generada pasa por un riguroso proceso de validación:
+- **Solo Lectura**: Bloqueo absoluto de sentencias `INSERT`, `UPDATE`, `DELETE`, `DROP`, etc.
+- **Inyección Automática de Contexto**: El sistema fuerza la cláusula `WHERE id_organizacion = ?` en todas las consultas para garantizar que los datos nunca se crucen entre inquilinos.
 
-## 4. Instalación
+### 🚩 Monitoreo de Riesgos
+Un panel dedicado a la detección automática de comportamientos sospechosos, como asociados con múltiples alertas abiertas o transacciones que superan umbrales críticos de riesgo financiero.
 
-Para preparar el ambiente, solo debes clonar o copiar este código y correr los siguientes comandos en tu terminal.
-
-1. Instalar dependencias requeridas:
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. (Opcional) Renombrar el archivo de variables:
-   ```bash
-   mv .env.example .env
-   ```
-   Agrega tu clave de Groq en `.env` si quieres activar la IA, o déjalo sin clave para probar el modo nativo (Fallback offline).
+### 📊 Tableros Interactivos
+Dashboard general con KPIs en tiempo real (Asociados, Transacciones, Alertas) y gráficos dinámicos (Plotly) para entender la distribución y severidad de la operación.
 
 ---
 
-## 5. Ejecución
+## 4. Stack Tecnológico
+- **Python 3.10+**: Núcleo del backend y lógica de negocio.
+- **Streamlit**: Framework para la interfaz de usuario reactiva y moderna.
+- **SQLite**: Base de datos relacional ligera y autocontenida.
+- **Pandas**: Procesamiento y manipulación de estructuras de datos.
+- **Plotly**: Generación de visualizaciones interactivas y profesionales.
+- **Groq API (Llama 3)**: Motor de inferencia ultra rápido para el procesamiento de lenguaje natural.
+- **python-dotenv**: Gestión segura de variables de entorno.
 
-Para iniciar el servidor local de la interfaz gráfica, corre:
+---
 
+## 5. Modelo de Datos
+La base de datos se compone de las siguientes entidades principales:
+
+1.  **`organizaciones`**: Cooperativas o entidades financieras inquilinas.
+2.  **`usuarios`**: Personal administrativo con acceso a la plataforma.
+3.  **`analistas`**: Responsables de la gestión de riesgos y asociados.
+4.  **`asociados`**: Clientes finales de las organizaciones.
+5.  **`cuentas`**: Productos financieros vinculados a los asociados.
+6.  **`transacciones`**: Movimientos financieros (depósitos, retiros, transferencias).
+7.  **`alertas`**: Registros de actividad sospechosa generados por el sistema.
+
+---
+
+## 6. Instalación y Configuración
+
+### Requisitos Previos
+- Python 3.10 o superior instalado.
+- Una API Key de Groq (Opcional, para activar la funcionalidad completa de IA).
+
+### Pasos
+1. **Clonar el repositorio** y acceder a la carpeta raíz.
+2. **Instalar dependencias**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+3. **Configurar variables de entorno**:
+    Crea un archivo `.env` basado en `.env.example`:
+    ```bash
+    cp .env.example .env
+    ```
+    Edita `.env` y añade tu `GROQ_API_KEY`. Si no tienes una, la aplicación funcionará en modo **Resiliencia (Fallback)**.
+4. **Inicializar la Base de Datos**:
+    Ejecuta el script de hidratación para crear datos sintéticos:
+    ```bash
+    python generar_base_datos.py
+    ```
+
+---
+
+## 7. Guía de Uso
+
+### Ejecución de la App
+Inicia el servidor de Streamlit:
 ```bash
 streamlit run app.py
 ```
-*Si la base de datos SQLite no existe, el sistema la creará e hidratará automáticamente en el primer inicio con datos sintéticos de muestra.*
 
----
-
-## 6. Usuarios de Prueba (Demo)
-
-Puedes iniciar sesión utilizando cualquiera de estos dos perfiles aislados. Cada uno verá **únicamente** los datos de su propia empresa:
+### Usuarios de Prueba (Demo)
+El sistema cuenta con aislamiento total. Puedes probar el acceso con las siguientes credenciales:
 
 | Organización | Usuario | Contraseña |
-| --- | --- | --- |
+| :--- | :--- | :--- |
 | **Cooperativa del Valle** | `admin_valle` | `admin123` |
 | **Cooperativa Antioqueña** | `admin_antioquia` | `admin123` |
+| **Cooperativa del Caribe** | `admin_caribe` | `admin123` |
 
----
-
-## 7. Ejemplos de Consultas (NL2SQL)
-
-Una vez logueado, dirígete a la pestaña **Consulta Inteligente** y experimenta introduciendo preguntas naturales como estas:
-
-- *"¿Cuántos asociados tiene mi organización actualmente?"*
+### Ejemplos de Consultas NLP
+Prueba las siguientes preguntas en la pestaña de **Consulta Inteligente**:
+- *"¿Cuántos asociados tiene mi organización?"*
 - *"Muéstrame las transacciones del último mes."*
-- *"Dame un resumen del total de alertas abiertas."*
-- *"¿Cuáles son los asociados con mayor actividad por monto?"*
-- *"Lista todos mis usuarios inactivos."*
-
-El LLM entenderá la métrica buscada y generará automáticamente el SQL necesario.
+- *"Lista todos mis analistas activos."*
+- *"Dame un resumen de las alertas abiertas."*
 
 ---
 
-## 8. Funcionamiento del Sistema
-
-- **Login Mantenido**: El estado de sesión (`st.session_state`) envuelve todo el uso del usuario protegiendo si está conectado o no en cada clic que haga.
-- **Filtro `organization_id`**: Cada vez que se ejecuta una petición, el sistema inyecta nativamente un `WHERE asoc.id_organizacion = X` amarrándolo a la sesión actual del usuario ingresado. El usuario final **no puede hackear o cambiar este valor** desde la interfaz.
-- **NL2SQL Activo**: Toma el input, se pasa junto al esquema de variables a Groq (IA), la IA devuelve texto SQL, pasa por el módulo de seguridad, se extraen los datos y se plasman en un DataFrame en UI.
-- **Fallback Activo (Módulo sin IA)**: Si la API no responde, no hay internet, o no hay token en `.env`, el sistema no se rompe. Emplea Regex interno (Expresiones regulares) para capturar la "intención" del usuario (ej. si lee "transacciones mes") y envía un código SQL ya compilado seguro offline. 
-- **Monitoreo Cíclico**: Analiza en bloque mediante SQLs en `rules.py` y dispara advertencias si un cliente tiene demasiadas alertas activadas o transacciones desorbitadas.
+## 8. Diseño de Seguridad y Multi-Tenant
+La seguridad se ha implementado en múltiples capas:
+1. **Sesión Segura**: El `organization_id` se vincula permanentemente a la sesión del usuario tras el login.
+2. **Validación de Token de Consulta**: El motor NL2SQL verifica la existencia del filtro de organización antes de permitir la ejecución.
+3. **Parámetros Seguros**: Se utilizan consultas parametrizadas (`?`) para evitar cualquier intento de inyección SQL manual.
 
 ---
 
-## 9. Seguridad Profunda
-
-La seguridad fue construida pensando en mitigar ataques de inyección y sobreescrituras:
-- **Solo Lectura Estricta**: El `sql_guardrails.py` bloquea por completo sentencias tipo `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `TRUNCATE`. Solo deja pasar `SELECT`.
-- **Aislamiento Multi-Tenant Garantizado**: El Guardrail lee el texto del SQL y si no detecta explícitamente el fragmento que liga la búsqueda al `id_organizacion` correspondiente de la persona, trata de inyectarlo por fuerza y si no puede acoplarlo estructuradamente, anula y detiene toda la ejecución de consulta arrojando una excepción defensiva. Nada se ejecuta si no está acotado.
-
----
-
-## 10. Decisiones de Diseño Principal
-
-- **Por qué Streamlit**: Fomenta el rápido desarrollo (prototipado) en Python puro sin tener que perder tiempo valioso conectando React/Vue vía APIs. Soporta estado nativo y recude los puntos de falla técnicos.
-- **Por qué SQLite**: No ocupa puertos, no exige a los directivos o jurados técnicos instalar motores de datos pasados como Postgres o MySQL para calificar este proyecto. Viene pre-compilado en el OS y en Python.
-- **Por qué Groq API**: Ofrece tiempos de Inferencia (TTFT) excesivamente rápidos en modelos de Meta Llama, haciendo que la sensación de chat sea instantánea sin latencia dolorosa.
-- **Por qué el Fallback**: En los entornos corporativos se puede perder conectividad saliente fácilmente. Una app "IA" que crashea si se cae la red externa no es resiliente. El "Fallback offline" avala la resiliencia productiva.
-
----
-
-## 11. Futuras Escalabilidades y Mejoras (Roadmap)
-- **Autenticación con JWT**: Desacoplar la vista en frontend conectándola vía Tokens JWT usando FastAPI por detrás, admitiendo autenticaciones corporativas reales mediante SSO u Oauth2.
-- **Motor Multi-BD**: Expandir el conector `connection.py` utilizando herramientas potentes como SQLAlchemy para interactuar dinámicamente tanto con Postgres, SQL Server u Oracle BD.
-- **Visualización Geométrica**: Integrar gráficos automáticos más nutridos para la pestaña del NL2SQL como diagramas de serie de tiempo dinámicos al instante.
-- **RAG Extendido**: Que el sistema no solo hable con la BD SQL, sino que además indexe los contratos o los PDFs de alertas en base vectorial.
+## 9. Roadmap y Mejoras Futuras
+- [ ] Implementación de autenticación vía **JWT** con un backend en FastAPI.
+- [ ] Integración de **SQLAlchemy** para soportar motores como PostgreSQL o SQL Server.
+- [ ] Módulo de **RAG (Retrieval-Augmented Generation)** para consultar manuales internos y normativas en PDF.
+- [ ] Exportación avanzada de reportes en PDF y Excel con firmas digitales.
